@@ -1,4 +1,4 @@
-*** LexiSearch Engine ***
+# LexiSearch Engine 
 
 LexiSearch Engine is a mini search engine built in C++ using advanced Data Structures and Algorithms concepts such as Trie, Inverted Index, and Hash Maps.
 
