@@ -7,12 +7,12 @@ It supports fast keyword searching, document indexing, prefix-based search, and 
 # Features
 
  -  Document Indexing  
- - Fast Keyword Search  
- - Ranked Search Results  
- - Prefix Search using Trie  
- - Case-Insensitive Search  
- - Word Frequency Analysis  
- - Efficient Inverted Indexing  
+ -  Fast Keyword Search  
+ -  Ranked Search Results  
+ -  Prefix Search using Trie  
+ -  Case-Insensitive Search  
+ -  Word Frequency Analysis  
+ -  Efficient Inverted Indexing  
 
 # Technologies Used
 
