@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Search Engine · Trie + Inverted Index</title>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+
+        body {
+            background: #f4f6fb;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 2rem 1.5rem;
+        }
+
+        .ui-card {
+            max-width: 1000px;
+            width: 100%;
+            background: #ffffff;
+            border-radius: 2.5rem;
+            box-shadow: 0 20px 40px -12px rgba(0, 20, 30, 0.25);
+            padding: 2rem 2rem 2.5rem;
+            transition: 0.2s;
+        }
+
+        h1 {
+            font-size: 2rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            color: #0b1e2e;
+            letter-spacing: -0.02em;
+            border-bottom: 2px solid #eef2f8;
+            padding-bottom: 1rem;
+            margin-bottom: 1.8rem;
+        }
+
+        h1 i {
+            color: #2563eb;
+            font-size: 2rem;
+            background: #e8edfb;
+            padding: 0.4rem 0.6rem;
+            border-radius: 1rem;
+        }
+
+        .badge {
+            background: #eef2f8;
+            color: #1e3a5f;
+            font-size: 0.75rem;
+            font-weight: 500;
+            padding: 0.3rem 1rem;
+            border-radius: 20px;
+            margin-left: 0.5rem;
+        }
+
+        .doc-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 0.9rem;
+            margin-bottom: 2rem;
+            background: #f9fafc;
+            padding: 1.25rem 1.5rem;
+            border-radius: 1.8rem;
+            border: 1px solid #eef2f8;
+        }
+
+        .doc-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.75rem;
+            font-size: 0.95rem;
+            padding: 0.4rem 0.2rem;
+            border-bottom: 1px dashed #e2e8f0;
+        }
+
+        .doc-item:last-child {
+            border-bottom: 0;
+        }
+
+        .doc-id {
+            background: #d4e0f0;
+            color: #0b2b44;
+            font-weight: 600;
+            padding: 0.1rem 0.9rem;
+            border-radius: 40px;
+            font-size: 0.8rem;
+            min-width: 60px;
+            text-align: center;
+            margin-top: 0.1rem;
+        }
+
+        .doc-text {
+            color: #1f3a4e;
+            line-height: 1.5;
+        }
+
+        .doc-text i {
+            color: #6b7f94;
+            font-size: 0.8rem;
+            margin-right: 0.3rem;
+        }
+
+        .search-panel {
+            background: #f9fafc;
+            border-radius: 2rem;
+            padding: 1.8rem 1.8rem 2rem;
+            border: 1px solid #eef2f8;
+            margin-bottom: 1.8rem;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: flex-end;
+            gap: 1rem 1.5rem;
+        }
+
+        .search-group {
+            flex: 2 1 260px;
+            min-width: 200px;
+        }
+
+        .search-group label {
+            display: block;
+            font-size: 0.8rem;
+            font-weight: 500;
+            letter-spacing: 0.02em;
+            color: #3b536b;
+            margin-bottom: 0.4rem;
+        }
+
+        .search-group label i {
+            margin-right: 6px;
+            color: #2563eb;
+        }
+
+        .input-wrapper {
+            display: flex;
+            align-items: center;
+            background: white;
+            border-radius: 60px;
+            border: 1px solid #dce3ec;
+            transition: 0.15s;
+            padding: 0.1rem 0.1rem 0.1rem 1.2rem;
+        }
+
+        .input-wrapper:focus-within {
+            border-color: #2563eb;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+        }
+
+        .input-wrapper input {
+            border: none;
+            padding: 0.75rem 0.2rem;
+            font-size: 0.95rem;
+            width: 100%;
+            background: transparent;
+            outline: none;
+            color: #0b1e2e;
+        }
+
+        .input-wrapper input::placeholder {
+            color: #9aafc4;
+            font-weight: 400;
+        }
+
+        .btn {
+            background: #2563eb;
+            border: none;
+            color: white;
+            font-weight: 500;
+            padding: 0.6rem 1.4rem;
+            border-radius: 60px;
+            font-size: 0.9rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            cursor: pointer;
+            transition: 0.15s;
+            border: 1px solid transparent;
+            white-space: nowrap;
+        }
+
+        .btn i {
+            font-size: 0.9rem;
+        }
+
+        .btn:hover {
+            background: #1d4ed8;
+            transform: scale(0.97);
+            box-shadow: 0 6px 14px rgba(37, 99, 235, 0.25);
+        }
+
+        .btn-outline {
+            background: white;
+            color: #1e3a5f;
+            border: 1px solid #dce3ec;
+        }
+
+        .btn-outline:hover {
+            background: #f2f6fe;
+            border-color: #a0b9d4;
+            box-shadow: none;
+            transform: scale(0.97);
+        }
+
+        .btn-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.6rem;
+            align-items: center;
+            flex: 0 1 auto;
+        }
+
+        .result-area {
+            background: #ffffff;
+            border-radius: 1.8rem;
+            border: 1px solid #eef2f8;
+            padding: 1.2rem 1.5rem 1.8rem;
+            margin-top: 1rem;
+        }
+
+        .result-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .result-header h3 {
+            font-weight: 600;
+            font-size: 1.1rem;
+            color: #0b1e2e;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .result-header h3 i {
+            color: #2563eb;
+        }
+
+        .result-stats {
+            background: #f1f5f9;
+            padding: 0.2rem 1.2rem;
+            border-radius: 40px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            color: #1f3a4e;
+        }
+
+        .result-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            max-height: 360px;
+            overflow-y: auto;
+            padding-right: 6px;
+        }
+
+        .result-list::-webkit-scrollbar {
+            width: 5px;
+        }
+
+        .result-list::-webkit-scrollbar-track {
+            background: #eef2f8;
+            border-radius: 10px;
+        }
+
+        .result-list::-webkit-scrollbar-thumb {
+            background: #b8ccde;
+            border-radius: 10px;
+        }
+
+        .result-item {
+            background: #fafcff;
+            border-radius: 1.2rem;
+            padding: 0.9rem 1.2rem;
+            border: 1px solid #e7edf6;
+            transition: 0.1s;
+        }
+
+        .result-item .meta {
+            display: flex;
+            align-items: center;
+            gap: 1.2rem;
+            flex-wrap: wrap;
+            margin-bottom: 0.4rem;
+        }
+
+        .result-item .doc-id-badge {
+            background: #d9e3f0;
+            padding: 0.1rem 1rem;
+            border-radius: 40px;
+            font-weight: 600;
+            font-size: 0.75rem;
+            color: #143450;
+        }
+
+        .result-item .score-badge {
+            background: #d3e3fd;
+            color: #1f4a8a;
+            padding: 0.1rem 1rem;
+            border-radius: 40px;
+            font-weight: 500;
+            font-size: 0.75rem;
+        }
+
+        .result-item .text {
+            color: #1f3a4e;
+            font-size: 0.95rem;
+            padding-left: 0.2rem;
+            word-break: break-word;
+        }
+
+        .empty-message {
+            color: #6b7f94;
+            text-align: center;
+            padding: 1.8rem 0.5rem;
+            font-style: italic;
+            background: #f9fafc;
+            border-radius: 1.5rem;
+            border: 1px dashed #dce3ec;
+        }
+
+        .trie-status {
+            background: #f1f5f9;
+            padding: 0.5rem 1.2rem;
+            border-radius: 60px;
+            font-size: 0.85rem;
+            color: #1e3a5f;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-top: 0.75rem;
+        }
+
+        .trie-status i {
+            color: #2563eb;
+        }
+
+        .footer-note {
+            display: flex;
+            justify-content: flex-end;
+            font-size: 0.7rem;
+            color: #7b93ab;
+            margin-top: 0.8rem;
+            border-top: 1px solid #edf2f9;
+            padding-top: 0.8rem;
+        }
+
+        @media (max-width: 600px) {
+            .ui-card {
+                padding: 1.5rem;
+            }
+
+            .search-panel {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .btn-group {
+                justify-content: stretch;
+            }
+
+            .btn {
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="ui-card">
+        <h1>
+            <i class="fas fa-code"></i> Search Engine
+            <span class="badge"><i class="fas fa-database"></i> trie + inverted index</span>
+        </h1>
+
+        <!-- Document Corpus (immutable, from C++ code) -->
+        <div class="doc-grid">
+            <div class="doc-item"><span class="doc-id">Doc 1</span><span class="doc-text"><i
+                        class="fas fa-file-alt"></i> C++ is powerful and fast programming language</span></div>
+            <div class="doc-item"><span class="doc-id">Doc 2</span><span class="doc-text"><i
+                        class="fas fa-file-alt"></i> Search engines use trie and inverted index</span></div>
+            <div class="doc-item"><span class="doc-id">Doc 3</span><span class="doc-text"><i
+                        class="fas fa-file-alt"></i> C++ search engine project using trie</span></div>
+            <div class="doc-item"><span class="doc-id">Doc 4</span><span class="doc-text"><i
+                        class="fas fa-file-alt"></i> Trie data structure enables fast searching</span></div>
+        </div>
+
+        <!-- Search controls -->
+        <div class="search-panel">
+            <div class="search-group">
+                <label for="keywordInput"><i class="fas fa-search"></i> Keyword search</label>
+                <div class="input-wrapper">
+                    <input type="text" id="keywordInput" placeholder="e.g. trie, c++, search" value="trie">
+                    <button class="btn" id="searchBtn"><i class="fas fa-arrow-right"></i> Search</button>
+                </div>
+            </div>
+            <div class="search-group" style="flex:1 1 160px;">
+                <label for="prefixInput"><i class="fas fa-arrow-trend-up"></i> Prefix / trie check</label>
+                <div class="input-wrapper">
+                    <input type="text" id="prefixInput" placeholder="e.g. sear" value="search">
+                    <button class="btn btn-outline" id="prefixBtn"><i class="fas fa-sitemap"></i> Check</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Result display -->
+        <div class="result-area" id="resultArea">
+            <div class="result-header">
+                <h3><i class="fas fa-list-ul"></i> Results</h3>
+                <span class="result-stats" id="resultStats">ready</span>
+            </div>
+            <div id="resultList" class="result-list">
+                <!-- dynamic content -->
+                <div class="empty-message"><i class="fas fa-lightbulb" style="margin-right:8px;"></i> Use the search bar
+                    above</div>
+            </div>
+            <div id="trieStatus" class="trie-status">
+                <i class="fas fa-check-circle"></i> Trie lookup: <span id="trieLookupResult">—</span>
+            </div>
+        </div>
+        <div class="footer-note">
+            <i class="fas fa-microchip"></i> simulated C++ engine · trie + inverted index ranking
+        </div>
+    </div>
+    <script>
+        (function () {
+            // ----- in-memory data (mirroring C++ code) -----
+            const documents = [
+                { id: 1, text: "C++ is powerful and fast programming language" },
+                { id: 2, text: "Search engines use trie and inverted index" },
+                { id: 3, text: "C++ search engine project using trie" },
+                { id: 4, text: "Trie data structure enables fast searching" }
+            ];
+
+            // Build inverted index & frequency (case-insensitive)
+            function buildIndex(docs) {
+                const inverted = new Map();   // word -> [docID, ...]
+                const freq = new Map();       // docID -> Map(word -> count)
+                const trieWords = new Set();
+
+                docs.forEach(doc => {
+                    const words = doc.text.toLowerCase().split(/\s+/);
+                    const docFreq = new Map();
+                    words.forEach(w => {
+                        // simple tokenization: keep alphanumeric and hyphen? we keep as is.
+                        if (!w) return;
+                        docFreq.set(w, (docFreq.get(w) || 0) + 1);
+                        if (!inverted.has(w)) inverted.set(w, []);
+                        if (!inverted.get(w).includes(doc.id)) {
+                            inverted.get(w).push(doc.id);
+                        }
+                        trieWords.add(w);
+                    });
+                    freq.set(doc.id, docFreq);
+                });
+                return { inverted, freq, trieWords };
+            }
+
+            const { inverted, freq, trieWords } = buildIndex(documents);
+
+            // ----- UI elements -----
+            const keywordInput = document.getElementById('keywordInput');
+            const prefixInput = document.getElementById('prefixInput');
+            const searchBtn = document.getElementById('searchBtn');
+            const prefixBtn = document.getElementById('prefixBtn');
+            const resultList = document.getElementById('resultList');
+            const resultStats = document.getElementById('resultStats');
+            const trieLookupSpan = document.getElementById('trieLookupResult');
+
+            // ----- render results -----
+            function renderResults(keyword, results) {
+                // results: array of { docId, score, text }
+                resultList.innerHTML = '';
+
+                if (!results || results.length === 0) {
+                    resultList.innerHTML = `<div class="empty-message"><i class="fas fa-search" style="margin-right:8px;"></i> No results for “${keyword}”</div>`;
+                    resultStats.textContent = `0 results`;
+                    return;
+                }
+
+                results.forEach(r => {
+                    const item = document.createElement('div');
+                    item.className = 'result-item';
+                    item.innerHTML = `
+            <div class="meta">
+                <span class="doc-id-badge"><i class="far fa-file"></i> Doc ${r.docId}</span>
+                <span class="score-badge"><i class="fas fa-star"></i> score ${r.score}</span>
+            </div>
+            <div class="text">${r.text}</div>
+        `;
+                    resultList.appendChild(item);
+                });
+
+                resultStats.textContent = `${results.length} result${results.length > 1 ? 's' : ''}`;
+            }
+
+            // ----- perform search (exact keyword) -----
+            function performSearch(keyword) {
+                const kw = keyword.trim().toLowerCase();
+                if (!kw) {
+                    renderResults('(empty)', []);
+                    resultStats.textContent = 'enter a keyword';
+                    return;
+                }
+
+                const docIds = inverted.get(kw) || [];
+                if (docIds.length === 0) {
+                    renderResults(kw, []);
+                    return;
+                }
+
+                // build ranked results: [ { docId, score, text } ]
+                const ranked = docIds.map(id => {
+                    const score = freq.get(id)?.get(kw) || 0;
+                    const doc = documents.find(d => d.id === id);
+                    return { docId: id, score, text: doc ? doc.text : '' };
+                });
+
+                // sort descending by score
+                ranked.sort((a, b) => b.score - a.score);
+                renderResults(kw, ranked);
+            }
+
+            // ----- trie / prefix check (simulate) -----
+            function checkPrefix(prefix) {
+                const p = prefix.trim().toLowerCase();
+                if (!p) {
+                    trieLookupSpan.textContent = '⛔ enter a prefix';
+                    return;
+                }
+                // simulate trie search: check if any word starts with prefix (or exact)
+                // In the C++ code, prefixSearch() just calls trie.search(prefix) which checks exact word.
+                // we also show if word exists in trie, plus if it's a prefix of any word.
+                const exact = trieWords.has(p);
+                const isPrefix = Array.from(trieWords).some(w => w.startsWith(p));
+                let msg = '';
+                if (exact) {
+                    msg = `✅ exact match “${p}” in trie`;
+                } else if (isPrefix) {
+                    msg = `🔍 “${p}” is a prefix of ${Array.from(trieWords).filter(w => w.startsWith(p)).length} word(s)`;
+                } else {
+                    msg = `❌ “${p}” not found in trie (nor prefix)`;
+                }
+                trieLookupSpan.textContent = msg;
+            }
+
+            // ----- event bindings -----
+            searchBtn.addEventListener('click', function (e) {
+                e.preventDefault();
+                performSearch(keywordInput.value);
+            });
+
+            prefixBtn.addEventListener('click', function (e) {
+                e.preventDefault();
+                checkPrefix(prefixInput.value);
+            });
+
+            // Enter key on keyword input triggers search
+            keywordInput.addEventListener('keydown', function (e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    performSearch(keywordInput.value);
+                }
+            });
+
+            prefixInput.addEventListener('keydown', function (e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    checkPrefix(prefixInput.value);
+                }
+            });
+
+            // ----- initial load: run default search (trie) and prefix check (search) -----
+            window.addEventListener('load', function () {
+                // default keyword "trie" from placeholder
+                performSearch('trie');
+                // default prefix "search"
+                checkPrefix('search');
+                // sync input fields
+                keywordInput.value = 'trie';
+                prefixInput.value = 'search';
+            });
+
+            // also re-run if user changes input and clicks outside? we keep explicit.
+
+        })();
+    </script>
+</body>
+
+</html>
